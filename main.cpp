@@ -8,8 +8,10 @@ const int SCREEN_HEIGHT = 600;
 const int TILE_SIZE = 40;
 const int TANK_SIZE = 40;
 const int MOVE_DELAY = 100;
-const int BULLET_SPEED = 1;
+const double BULLET_SPEED = 0.3;
 const int BULLET_SIZE = 10;
+const Uint32 shootCooldown = 600;
+Uint32 lastShotTime = 0;
 int point=0;
 int enemiestank=4;
 SDL_Window* window = nullptr;
@@ -43,30 +45,30 @@ bool hasWon = false;
 bool running = true;
 int brickHealth[15][20] = {0};
 int map[15][20] = {
-    {0,0,0,0,1,0,0,1,1,0,0,1,1,0,0,1,0,0,0,0},
-    {0,0,0,0,1,0,0,0,0,1,1,0,0,0,0,1,0,0,0,0},
-    {1,1,0,2,2,2,2,1,0,0,0,0,1,2,2,2,2,0,1,1},
-    {0,0,0,2,0,0,0,0,0,2,2,0,0,0,0,0,2,0,0,0},
-    {0,1,1,2,1,0,0,1,0,0,0,0,1,0,0,1,2,1,1,0},
-    {0,0,0,2,1,0,0,1,0,0,0,0,1,0,0,1,2,0,0,0},
-    {1,1,0,0,0,1,1,0,0,1,1,0,0,1,1,0,0,0,1,1},
-    {0,0,0,0,2,2,2,2,2,0,0,2,2,2,2,2,0,0,0,0},
-    {0,1,1,0,0,1,1,0,0,1,1,0,0,1,1,0,0,1,1,0},
+    {0,0,1,1,0,0,2,2,2,0,0,2,2,2,0,0,1,1,0,0},
+    {0,0,0,1,0,1,2,0,0,1,1,0,0,2,1,0,1,0,0,0},
+    {1,1,0,2,2,1,2,1,0,0,0,0,1,2,1,2,2,0,1,1},
+    {0,0,0,2,0,0,2,0,0,2,2,0,0,2,0,0,2,0,0,0},
+    {0,1,1,2,1,0,2,1,0,0,0,0,1,2,0,1,2,1,1,0},
+    {0,0,0,2,1,0,2,1,0,0,0,0,1,2,0,1,2,0,0,0},
+    {1,1,0,0,0,1,0,0,0,1,1,0,0,0,1,0,0,0,1,1},
+    {0,0,0,2,2,2,2,2,2,0,0,2,2,2,2,2,0,0,0,0},
+    {0,1,1,0,0,0,1,0,0,1,1,0,0,1,0,0,0,1,1,0},
     {0,0,0,2,1,0,0,1,0,0,0,0,1,0,0,1,2,0,0,0},
     {1,1,0,2,1,0,0,1,0,0,0,0,1,0,0,1,2,0,1,1},
     {0,0,0,2,0,0,0,0,0,2,2,0,0,0,0,0,2,0,0,0},
     {0,1,1,2,2,2,2,1,0,0,0,0,1,2,2,2,2,1,1,0},
-    {0,0,0,0,1,0,0,0,0,1,1,0,0,0,0,1,0,0,0,0},
-    {0,0,0,0,1,0,0,1,1,0,0,1,1,0,0,1,0,0,0,0}
+    {0,0,0,1,0,0,0,0,1,1,1,0,0,0,0,1,0,0,0,0},
+    {0,0,1,1,0,0,2,2,2,0,0,2,2,2,0,0,1,1,0,0}
 };
 
 struct Bullet {
-    int x, y, dx, dy;
+    double x, y, dx, dy;
     SDL_Rect rect;
     bool active;
     int speed = 2;
 
-    Bullet(int startX, int startY, int dirX, int dirY) {
+    Bullet(double startX, double startY, double dirX, double dirY) {
         x = startX;
         y = startY;
         dx = dirX;
@@ -106,7 +108,7 @@ struct Bullet {
 
     void draw() {
         if (active) {
-            SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255);
+            SDL_SetRenderDrawColor(renderer, 0, 0, 139, 0);
             SDL_RenderFillRect(renderer, &rect);
         }
     }
@@ -242,7 +244,13 @@ struct Tank {
     }
 
     void shoot() {
-        bullets.emplace_back(x + TANK_SIZE / 2 - BULLET_SIZE / 2, y + TANK_SIZE / 2 - BULLET_SIZE / 2, dirX, dirY);
+        Uint32 currentTime = SDL_GetTicks();
+        if (currentTime - lastShotTime >= shootCooldown) {
+            bullets.emplace_back(x + TANK_SIZE / 2 - BULLET_SIZE / 2,
+                                 y + TANK_SIZE / 2 - BULLET_SIZE / 2,
+                                 dirX, dirY);
+            lastShotTime = currentTime;
+        }
     }
 
     void draw() {
@@ -258,17 +266,17 @@ bool init() {
     if (!renderer) return false;
     IMG_Init(IMG_INIT_PNG);
     heartTexture = IMG_LoadTexture(renderer,"tankheart.png");
-    groundTexture = IMG_LoadTexture(renderer,"ground.png");
+    groundTexture = IMG_LoadTexture(renderer,"ground2.png");
     wallTexture = IMG_LoadTexture(renderer,"wall.png");
     steelWallTexture = IMG_LoadTexture(renderer,"steelwall.png");
     enemyTankUpTexture = IMG_LoadTexture(renderer, "enemytankup.png");
     enemyTankDownTexture = IMG_LoadTexture(renderer, "enemytankdown.png");
     enemyTankRightTexture = IMG_LoadTexture(renderer, "enemytankright.png");
     enemyTankLeftTexture = IMG_LoadTexture(renderer, "enemytankleft.png");
-    tankUpTexture = IMG_LoadTexture(renderer, "tankerup.png");
-    tankDownTexture = IMG_LoadTexture(renderer, "tankerdown.png");
-    tankLeftTexture = IMG_LoadTexture(renderer, "tankerleft.png");
-    tankRightTexture = IMG_LoadTexture(renderer, "tankerright.png");
+    tankUpTexture = IMG_LoadTexture(renderer, "tankerup1.png");
+    tankDownTexture = IMG_LoadTexture(renderer, "tankerdown1.png");
+    tankLeftTexture = IMG_LoadTexture(renderer, "tankerleft1.png");
+    tankRightTexture = IMG_LoadTexture(renderer, "tankerright1.png");
     return tankUpTexture && tankDownTexture && tankLeftTexture && tankRightTexture;
 }
 void drawMap(SDL_Renderer* renderer) {
