@@ -7,7 +7,6 @@ struct Bullet {
     double x, y, dx, dy;
     SDL_Rect rect;
     bool active;
-    int speed = 2;
 
     Bullet(double startX, double startY, double dirX, double dirY) {
         x = startX;

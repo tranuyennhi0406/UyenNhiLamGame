@@ -55,7 +55,7 @@ struct EnemyTank {
     }
     void shootIfReady() {
     Uint32 currentTime = SDL_GetTicks();
-    if (currentTime - lastShotTime >= 800) {
+    if (currentTime - lastShotTime >= 1200) {
         enemyBullets.emplace_back(x + TANK_SIZE / 2 - BULLET_SIZE / 2,
                                   y + TANK_SIZE / 2 - BULLET_SIZE / 2,
                                   dirX, dirY);
@@ -75,9 +75,9 @@ struct EnemyTank {
 };
 std::vector<EnemyTank> enemies;
 void spawnEnemies() {
-    enemies.emplace_back(6 * TILE_SIZE, 3 * TILE_SIZE);
+    enemies.emplace_back(7 * TILE_SIZE, 3 * TILE_SIZE);
     enemies.emplace_back(6 * TILE_SIZE, 11 * TILE_SIZE);
-    enemies.emplace_back(13 * TILE_SIZE, 3 * TILE_SIZE);
+    enemies.emplace_back(12 * TILE_SIZE, 3 * TILE_SIZE);
     enemies.emplace_back(13 * TILE_SIZE, 11 * TILE_SIZE);
 }
 #endif
